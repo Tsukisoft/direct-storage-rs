@@ -1,6 +1,6 @@
 [package]
 name = "direct-storage"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Tsukisoft GmbH <contact@tsukisoft.com>"]
 license = "Apache-2.0 OR MIT"
 readme = "README.md"
@@ -12,6 +12,8 @@ keywords = ["graphics"]
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]
+default-target = "x86_64-pc-windows-msvc"
+targets = []
 
 [dependencies]
 once_cell = "1.17"
