@@ -57,6 +57,7 @@ enum TestCase {
 
 #[derive(Copy, Clone)]
 struct ChunkMetadata {
+    compressed: bool,
     offset: u32,
     compressed_size: u32,
     uncompressed_size: u32,
@@ -187,11 +188,7 @@ pub fn main() {
         };
 
         for staging_buffer_size_mib in staging_sizes_mib.iter().copied() {
-            // The staging buffer needs to be bigger than the chunk size when using compression!
-            //
-            // The official example specifies that it also can be the same size, but DirectStorage
-            // fails both in this and the official example in that case.
-            if staging_buffer_size_mib <= chunk_size_mib {
+            if staging_buffer_size_mib < chunk_size_mib {
                 continue;
             }
 
@@ -276,12 +273,13 @@ fn uncompressed(original_file_path: &PathBuf, chunk_size_bytes: u32) -> Metadata
     let size = file.metadata().expect("No metadata available").len();
     let size = u32::try_from(size).expect("File is bigger than u32::MAX");
 
-    let mut chunks = Vec::new();
+    let mut chunks_metadata = Vec::new();
 
     let mut offset = 0;
     while offset < size {
         let chunk_size = u32::min(size - offset, chunk_size_bytes);
-        chunks.push(ChunkMetadata {
+        chunks_metadata.push(ChunkMetadata {
+            compressed: false,
             offset,
             compressed_size: chunk_size,
             uncompressed_size: chunk_size,
@@ -293,7 +291,7 @@ fn uncompressed(original_file_path: &PathBuf, chunk_size_bytes: u32) -> Metadata
     Metadata {
         uncompressed_size: size,
         compressed_size: size,
-        chunks,
+        chunks: chunks_metadata,
     }
 }
 
@@ -347,16 +345,37 @@ fn compressed(
                 .expect("Can't compress buffer");
             chunk.set_len(compressed_size);
         }
-        let offset = total_compressed_size;
-        total_compressed_size += compressed_size;
 
-        chunks.push(chunk);
+        if compressed_size < chunk_size as usize {
+            let offset = total_compressed_size;
+            total_compressed_size += compressed_size;
 
-        chunks_metadata.push(ChunkMetadata {
-            offset: offset as u32,
-            compressed_size: compressed_size as u32,
-            uncompressed_size: chunk_size,
-        })
+            chunks.push(chunk);
+
+            chunks_metadata.push(ChunkMetadata {
+                compressed: true,
+                offset: offset as u32,
+                compressed_size: compressed_size as u32,
+                uncompressed_size: chunk_size,
+            })
+        } else {
+            // It's more efficient to save the uncompressed chunk.
+            let offset = total_compressed_size;
+            total_compressed_size += chunk_size as usize;
+
+            unsafe { chunk.set_len(chunk_size as usize) };
+            chunk.copy_from_slice(
+                &uncompressed_data[chunk_offset as usize..(chunk_offset + chunk_size) as usize],
+            );
+            chunks.push(chunk);
+
+            chunks_metadata.push(ChunkMetadata {
+                compressed: false,
+                offset: offset as u32,
+                compressed_size: chunk_size,
+                uncompressed_size: chunk_size,
+            });
+        }
     }
 
     println!(
@@ -502,6 +521,12 @@ fn run_test(
         };
 
         for chunk in &metadata.chunks {
+            let compression_format = if chunk.compressed {
+                compression_format
+            } else {
+                DSTORAGE_COMPRESSION_FORMAT::DSTORAGE_COMPRESSION_FORMAT_NONE
+            };
+
             let mut options = DSTORAGE_REQUEST_OPTIONS::default();
             options.set_CompressionFormat(compression_format);
             options.set_SourceType(DSTORAGE_REQUEST_SOURCE_TYPE::DSTORAGE_REQUEST_SOURCE_FILE);
