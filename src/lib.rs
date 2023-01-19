@@ -20,7 +20,7 @@ use std::{
     ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign},
 };
 
-use load::Lib;
+use libloading::Library;
 use once_cell::sync::Lazy;
 use windows::{
     core::{Interface, Result, GUID, HRESULT},
@@ -37,7 +37,6 @@ pub use crate::com_impl::*;
 
 mod com_impl;
 pub mod errors;
-mod load;
 
 // This is true for all currently supported Rust targets. Use upstream `c_size_t` once stable:
 // https://github.com/rust-lang/rust/issues/88345
@@ -49,22 +48,23 @@ pub const DSTORAGE_MAX_QUEUE_CAPACITY: u16 = 0x2000;
 pub const DSTORAGE_DISABLE_BUILTIN_CPU_DECOMPRESSION: i32 = -1;
 
 static DIRECT_STORAGE_LIB: Lazy<Libraries> = Lazy::new(|| {
-    let ds = unsafe { Lib::new("dstorage.dll").expect("Can't load `dstorage.dll`") };
-    let core = unsafe { Lib::new("dstoragecore.dll").expect("Can't load `dstoragecore.dll`") };
+    let ds = unsafe { Library::new("dstorage.dll").expect("Can't load `dstorage.dll`") };
+    let core = unsafe { Library::new("dstoragecore.dll").expect("Can't load `dstoragecore.dll`") };
     Libraries { ds, _core: core }
 });
 
 struct Libraries {
-    ds: Lib,
-    _core: Lib,
+    ds: Library,
+    _core: Library,
 }
 
 pub unsafe fn DStorageSetConfiguration(configuration: &DSTORAGE_CONFIGURATION) -> Result<()> {
-    let f: &unsafe extern "system" fn(configuration: *const DSTORAGE_CONFIGURATION) -> HRESULT =
-        DIRECT_STORAGE_LIB
-            .ds
-            .get(b"DStorageSetConfiguration\0")
-            .expect("Can't load function`DStorageSetConfiguration`");
+    let f = DIRECT_STORAGE_LIB
+        .ds
+        .get::<unsafe extern "system" fn(configuration: *const DSTORAGE_CONFIGURATION) -> HRESULT>(
+            b"DStorageSetConfiguration\0",
+        )
+        .expect("Can't load function`DStorageSetConfiguration`");
 
     f(configuration as *const DSTORAGE_CONFIGURATION).ok()
 }
@@ -73,11 +73,12 @@ pub unsafe fn DStorageGetFactory<T>() -> Result<T>
 where
     T: Interface,
 {
-    let f: &unsafe extern "system" fn(riid: *const GUID, ppv: *mut *mut c_void) -> HRESULT =
-        DIRECT_STORAGE_LIB
-            .ds
-            .get(b"DStorageGetFactory\0")
-            .expect("Can't load function`DStorageGetFactory`");
+    let f = DIRECT_STORAGE_LIB
+        .ds
+        .get::<unsafe extern "system" fn(riid: *const GUID, ppv: *mut *mut c_void) -> HRESULT>(
+            b"DStorageGetFactory\0",
+        )
+        .expect("Can't load function`DStorageGetFactory`");
 
     let mut result = None;
     f(&T::IID, &mut result as *mut _ as *mut _).and_some(result)
@@ -90,14 +91,14 @@ pub unsafe fn DStorageCreateCompressionCodec<T>(
 where
     T: Interface,
 {
-    let f: &unsafe extern "system" fn(
-        format: DSTORAGE_COMPRESSION_FORMAT,
-        numThreads: u32,
-        riid: *const GUID,
-        ppv: *mut *mut c_void,
-    ) -> HRESULT = DIRECT_STORAGE_LIB
+    let f = DIRECT_STORAGE_LIB
         .ds
-        .get(b"DStorageCreateCompressionCodec\0")
+        .get::<unsafe extern "system" fn(
+            format: DSTORAGE_COMPRESSION_FORMAT,
+            numThreads: u32,
+            riid: *const GUID,
+            ppv: *mut *mut c_void,
+        ) -> HRESULT>(b"DStorageCreateCompressionCodec\0")
         .expect("Can't load function`DStorageCreateCompressionCodec`");
 
     let mut result = None;
