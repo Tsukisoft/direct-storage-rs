@@ -9,25 +9,26 @@
 
 use std::{
     io::Write,
+    mem::ManuallyDrop,
     os::windows::ffi::OsStrExt,
     path::{Path, PathBuf},
     process::exit,
-    ptr::null,
     thread::sleep,
     time::Duration,
 };
 
 use direct_storage::{
-    DStorageCreateCompressionCodec, DStorageGetFactory, DStorageSetConfiguration,
+    readonly_copy, DStorageCreateCompressionCodec, DStorageGetFactory, DStorageSetConfiguration,
     IDStorageCompressionCodec, IDStorageFactory, IDStorageFile, IDStorageQueue,
-    DSTORAGE_COMMAND_TYPE, DSTORAGE_COMPRESSION, DSTORAGE_COMPRESSION_FORMAT,
-    DSTORAGE_CONFIGURATION, DSTORAGE_DEBUG, DSTORAGE_DESTINATION, DSTORAGE_DESTINATION_BUFFER,
-    DSTORAGE_MAX_QUEUE_CAPACITY, DSTORAGE_PRIORITY, DSTORAGE_QUEUE_DESC, DSTORAGE_REQUEST,
-    DSTORAGE_REQUEST_DESTINATION_TYPE, DSTORAGE_REQUEST_OPTIONS, DSTORAGE_REQUEST_SOURCE_TYPE,
-    DSTORAGE_SOURCE, DSTORAGE_SOURCE_FILE,
+    DSTORAGE_COMMAND_TYPE_REQUEST, DSTORAGE_COMPRESSION_BEST_RATIO, DSTORAGE_COMPRESSION_FORMAT,
+    DSTORAGE_COMPRESSION_FORMAT_GDEFLATE, DSTORAGE_COMPRESSION_FORMAT_NONE, DSTORAGE_CONFIGURATION,
+    DSTORAGE_DEBUG_BREAK_ON_ERROR, DSTORAGE_DEBUG_SHOW_ERRORS, DSTORAGE_DESTINATION,
+    DSTORAGE_DESTINATION_BUFFER, DSTORAGE_MAX_QUEUE_CAPACITY, DSTORAGE_PRIORITY_NORMAL,
+    DSTORAGE_QUEUE_DESC, DSTORAGE_REQUEST, DSTORAGE_REQUEST_DESTINATION_BUFFER,
+    DSTORAGE_REQUEST_OPTIONS, DSTORAGE_REQUEST_SOURCE_FILE, DSTORAGE_SOURCE, DSTORAGE_SOURCE_FILE,
 };
 use windows::{
-    core::{Vtable, PCWSTR},
+    core::{PCSTR, PCWSTR},
     Win32::{
         Foundation::CloseHandle,
         Graphics::{
@@ -124,7 +125,7 @@ pub fn main() {
     let uncompressed_metadata = uncompressed(&original_file_path, chunk_size_bytes);
 
     let compress_metadata = compressed(
-        DSTORAGE_COMPRESSION_FORMAT::DSTORAGE_COMPRESSION_FORMAT_GDEFLATE,
+        DSTORAGE_COMPRESSION_FORMAT_GDEFLATE,
         &original_file_path,
         &gdeflate_file_path,
         chunk_size_bytes,
@@ -143,15 +144,14 @@ pub fn main() {
 
         match test_case {
             TestCase::Uncompressed => {
-                compression_format = DSTORAGE_COMPRESSION_FORMAT::DSTORAGE_COMPRESSION_FORMAT_NONE;
+                compression_format = DSTORAGE_COMPRESSION_FORMAT_NONE;
                 num_runs = 10;
                 metadata = &uncompressed_metadata;
                 file_path = &original_file_path;
                 println!("\nUNCOMPRESSED:");
             }
             TestCase::CpuGDeflate => {
-                compression_format =
-                    DSTORAGE_COMPRESSION_FORMAT::DSTORAGE_COMPRESSION_FORMAT_GDEFLATE;
+                compression_format = DSTORAGE_COMPRESSION_FORMAT_GDEFLATE;
                 num_runs = 10;
 
                 configuration.NumBuiltInCpuDecompressionThreads = 0; // Best guess by the system.
@@ -162,8 +162,7 @@ pub fn main() {
                 println!("\nCPU GDEFLATE:");
             }
             TestCase::GpuGDeflate => {
-                compression_format =
-                    DSTORAGE_COMPRESSION_FORMAT::DSTORAGE_COMPRESSION_FORMAT_GDEFLATE;
+                compression_format = DSTORAGE_COMPRESSION_FORMAT_GDEFLATE;
                 num_runs = 10;
 
                 metadata = &compress_metadata;
@@ -177,12 +176,9 @@ pub fn main() {
                 .expect("Can't set DirectStorage configuration");
 
             let factory: IDStorageFactory =
-                DStorageGetFactory().expect("Can't fer DirectStorage factor");
+                DStorageGetFactory().expect("Can't get DirectStorage factory");
 
-            factory.SetDebugFlags(
-                DSTORAGE_DEBUG::DSTORAGE_DEBUG_SHOW_ERRORS
-                    | DSTORAGE_DEBUG::DSTORAGE_DEBUG_BREAK_ON_ERROR,
-            );
+            factory.SetDebugFlags(DSTORAGE_DEBUG_SHOW_ERRORS.0 | DSTORAGE_DEBUG_BREAK_ON_ERROR.0);
 
             factory
         };
@@ -337,7 +333,7 @@ fn compressed(
                 .CompressBuffer(
                     &uncompressed_data[chunk_offset as usize] as *const u8 as *const _,
                     chunk_size as usize,
-                    DSTORAGE_COMPRESSION::DSTORAGE_COMPRESSION_BEST_RATIO,
+                    DSTORAGE_COMPRESSION_BEST_RATIO,
                     chunk.as_mut_ptr() as *mut _,
                     bound,
                     &mut compressed_size,
@@ -424,7 +420,7 @@ fn run_test(
     unsafe { factory.SetStagingBufferSize(staging_buffer_size_mib * 1024 * 1024) }
         .expect("Can't set staging buffer size");
 
-    let mut device: Option<ID3D12Device> = None;
+    let mut device = None::<ID3D12Device>;
     unsafe {
         D3D12CreateDevice(None, D3D_FEATURE_LEVEL_12_0, &mut device).expect("Can't get DX12 device")
     };
@@ -437,8 +433,8 @@ fn run_test(
         device
             .CheckFeatureSupport(
                 D3D12_FEATURE_SHADER_MODEL,
-                &mut info as *mut _ as *mut _,
-                std::mem::size_of::<D3D12_FEATURE_DATA_SHADER_MODEL>() as u32,
+                <*mut _>::cast(&mut info),
+                std::mem::size_of_val(&info) as u32,
             )
             .expect("Can't query shader model")
     };
@@ -449,18 +445,15 @@ fn run_test(
 
     // Create a DirectStorage queue which will be used to load data into a buffer on the GPU.
     let queue_desc = DSTORAGE_QUEUE_DESC {
-        SourceType: DSTORAGE_REQUEST_SOURCE_TYPE::DSTORAGE_REQUEST_SOURCE_FILE,
-        Capacity: DSTORAGE_MAX_QUEUE_CAPACITY,
-        Priority: DSTORAGE_PRIORITY::DSTORAGE_PRIORITY_NORMAL,
-        Name: null(),
-        Device: device.as_raw() as *mut _,
+        SourceType: DSTORAGE_REQUEST_SOURCE_FILE,
+        Capacity: DSTORAGE_MAX_QUEUE_CAPACITY as u16,
+        Priority: DSTORAGE_PRIORITY_NORMAL,
+        Name: PCSTR::null(),
+        Device: unsafe { readonly_copy(&device) },
     };
 
-    let queue: IDStorageQueue = unsafe {
-        factory
-            .CreateQueue(&queue_desc)
-            .expect("Can't create DirectStorage queue")
-    };
+    let queue: IDStorageQueue =
+        unsafe { factory.CreateQueue(&queue_desc) }.expect("Can't create DirectStorage queue");
 
     // Create the ID3D12Resource buffer which will be populated with the file's contents.
     let heap_props = D3D12_HEAP_PROPERTIES {
@@ -524,35 +517,36 @@ fn run_test(
             let compression_format = if chunk.compressed {
                 compression_format
             } else {
-                DSTORAGE_COMPRESSION_FORMAT::DSTORAGE_COMPRESSION_FORMAT_NONE
+                DSTORAGE_COMPRESSION_FORMAT_NONE
             };
 
             let mut options = DSTORAGE_REQUEST_OPTIONS::default();
             options.set_CompressionFormat(compression_format);
-            options.set_SourceType(DSTORAGE_REQUEST_SOURCE_TYPE::DSTORAGE_REQUEST_SOURCE_FILE);
-            options.set_DestinationType(
-                DSTORAGE_REQUEST_DESTINATION_TYPE::DSTORAGE_REQUEST_DESTINATION_BUFFER,
-            );
+            options.set_SourceType(DSTORAGE_REQUEST_SOURCE_FILE);
+            options.set_DestinationType(DSTORAGE_REQUEST_DESTINATION_BUFFER);
+
+            let file = file.clone();
+            let buffer_resource = buffer_resource.clone();
 
             let request = DSTORAGE_REQUEST {
                 Options: options,
                 Source: DSTORAGE_SOURCE {
-                    File: DSTORAGE_SOURCE_FILE {
-                        Source: file.as_raw() as *mut _,
+                    File: ManuallyDrop::new(DSTORAGE_SOURCE_FILE {
+                        Source: unsafe { readonly_copy(&file) },
                         Offset: chunk.offset as u64,
                         Size: chunk.compressed_size,
-                    },
+                    }),
                 },
                 Destination: DSTORAGE_DESTINATION {
-                    Buffer: DSTORAGE_DESTINATION_BUFFER {
-                        Resource: buffer_resource.as_raw() as *mut _,
+                    Buffer: ManuallyDrop::new(DSTORAGE_DESTINATION_BUFFER {
+                        Resource: unsafe { readonly_copy(&buffer_resource) },
                         Offset: dst_offset,
                         Size: chunk.uncompressed_size,
-                    },
+                    }),
                 },
                 UncompressedSize: chunk.uncompressed_size,
                 CancellationTag: 0,
-                Name: null(),
+                Name: PCSTR::null(),
             };
 
             unsafe { queue.EnqueueRequest(&request) };
@@ -560,9 +554,7 @@ fn run_test(
             dst_offset += request.UncompressedSize as u64;
         }
 
-        unsafe {
-            queue.EnqueueSignal(fence.as_raw() as *mut _, fence_value);
-        }
+        unsafe { queue.EnqueueSignal(&fence, fence_value) }
 
         let start_time = std::time::Instant::now();
         let start_cycle_time = get_process_cycle_time();
@@ -582,36 +574,19 @@ fn run_test(
             sleep(Duration::from_secs(5));
         }
 
-        let error_record = unsafe { queue.RetrieveErrorRecord() };
+        let mut error_record = Default::default();
+        unsafe { queue.RetrieveErrorRecord(&mut error_record) };
 
         if error_record.FirstFailure.HResult.is_err() {
             println!(
                 "\n\nThe DirectStorage request failed. HRESULT: {}",
                 error_record.FirstFailure.HResult
             );
-            if error_record.FirstFailure.CommandType
-                == DSTORAGE_COMMAND_TYPE::DSTORAGE_COMMAND_TYPE_REQUEST
-            {
-                let offset = unsafe {
-                    error_record
-                        .FirstFailure
-                        .Parameters
-                        .Request
-                        .Request
-                        .Source
-                        .File
-                        .Offset
-                };
-                let size = unsafe {
-                    error_record
-                        .FirstFailure
-                        .Parameters
-                        .Request
-                        .Request
-                        .Source
-                        .File
-                        .Size
-                };
+            if error_record.FirstFailure.CommandType == DSTORAGE_COMMAND_TYPE_REQUEST {
+                let request = unsafe { error_record.FirstFailure.Anonymous.Request };
+                let file = unsafe { &request.Request.Source.File };
+                let offset = file.Offset;
+                let size = file.Size;
                 println!("Offset: {} Size: {}", offset, size);
             }
             exit(-1);
@@ -656,6 +631,7 @@ fn show_help_text() {
 #[inline(always)]
 fn get_process_cycle_time() -> u64 {
     let mut cycles = 0;
-    unsafe { QueryProcessCycleTime(GetCurrentProcess(), &mut cycles) };
+    unsafe { QueryProcessCycleTime(GetCurrentProcess(), &mut cycles) }
+        .expect("Failed to query process cycle time");
     cycles
 }

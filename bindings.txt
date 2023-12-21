@@ -1,0 +1,5 @@
+--in .windows/winmd/
+--out src/Microsoft.rs
+
+--filter
+    Microsoft.Direct3D.DirectStorage

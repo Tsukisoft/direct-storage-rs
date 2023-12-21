@@ -6,17 +6,17 @@
 // IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
 // PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
 //
-use std::{os::windows::ffi::OsStrExt, path::Path, process::exit, ptr::null};
+use std::{mem::ManuallyDrop, os::windows::ffi::OsStrExt, path::Path, process::exit};
 
 use direct_storage::{
-    DStorageGetFactory, IDStorageFactory, IDStorageFile, IDStorageQueue,
-    DSTORAGE_COMPRESSION_FORMAT, DSTORAGE_DESTINATION, DSTORAGE_DESTINATION_BUFFER,
-    DSTORAGE_MAX_QUEUE_CAPACITY, DSTORAGE_PRIORITY, DSTORAGE_QUEUE_DESC, DSTORAGE_REQUEST,
-    DSTORAGE_REQUEST_DESTINATION_TYPE, DSTORAGE_REQUEST_OPTIONS, DSTORAGE_REQUEST_SOURCE_TYPE,
+    readonly_copy, DStorageGetFactory, IDStorageFactory, IDStorageFile, IDStorageQueue,
+    DSTORAGE_COMPRESSION_FORMAT_NONE, DSTORAGE_DESTINATION, DSTORAGE_DESTINATION_BUFFER,
+    DSTORAGE_MAX_QUEUE_CAPACITY, DSTORAGE_PRIORITY_NORMAL, DSTORAGE_QUEUE_DESC, DSTORAGE_REQUEST,
+    DSTORAGE_REQUEST_DESTINATION_BUFFER, DSTORAGE_REQUEST_OPTIONS, DSTORAGE_REQUEST_SOURCE_FILE,
     DSTORAGE_SOURCE, DSTORAGE_SOURCE_FILE,
 };
 use windows::{
-    core::{Vtable, PCWSTR},
+    core::{PCSTR, PCWSTR},
     Win32::{
         Foundation::{CloseHandle, INVALID_HANDLE_VALUE},
         Graphics::{
@@ -48,7 +48,7 @@ fn main() {
         .chain(Some(0))
         .collect();
 
-    let mut device: Option<ID3D12Device> = None;
+    let mut device = None::<ID3D12Device>;
     unsafe {
         D3D12CreateDevice(None, D3D_FEATURE_LEVEL_12_0, &mut device).expect("Can't get DX12 device")
     };
@@ -89,11 +89,11 @@ fn main() {
 
     // Create a DirectStorage queue which will be used to load data into a buffer on the GPU.
     let queue_desc = DSTORAGE_QUEUE_DESC {
-        SourceType: DSTORAGE_REQUEST_SOURCE_TYPE::DSTORAGE_REQUEST_SOURCE_FILE,
-        Capacity: DSTORAGE_MAX_QUEUE_CAPACITY,
-        Priority: DSTORAGE_PRIORITY::DSTORAGE_PRIORITY_NORMAL,
-        Name: null(),
-        Device: device.as_raw() as *mut _,
+        SourceType: DSTORAGE_REQUEST_SOURCE_FILE,
+        Capacity: DSTORAGE_MAX_QUEUE_CAPACITY as u16,
+        Priority: DSTORAGE_PRIORITY_NORMAL,
+        Name: PCSTR::null(),
+        Device: unsafe { readonly_copy(&device) },
     };
 
     let queue: IDStorageQueue = unsafe {
@@ -140,38 +140,34 @@ fn main() {
     // Enqueue a request to read the file contents into a destination D3D12 buffer resource.
     // Note: The example request below is performing a single read of the entire file contents.
     let mut options = DSTORAGE_REQUEST_OPTIONS::default();
-    options.set_CompressionFormat(DSTORAGE_COMPRESSION_FORMAT::DSTORAGE_COMPRESSION_FORMAT_NONE);
-    options.set_SourceType(DSTORAGE_REQUEST_SOURCE_TYPE::DSTORAGE_REQUEST_SOURCE_FILE);
-    options.set_DestinationType(
-        DSTORAGE_REQUEST_DESTINATION_TYPE::DSTORAGE_REQUEST_DESTINATION_BUFFER,
-    );
+    options.set_CompressionFormat(DSTORAGE_COMPRESSION_FORMAT_NONE);
+    options.set_SourceType(DSTORAGE_REQUEST_SOURCE_FILE);
+    options.set_DestinationType(DSTORAGE_REQUEST_DESTINATION_BUFFER);
 
     let request = DSTORAGE_REQUEST {
         Options: options,
         Source: DSTORAGE_SOURCE {
-            File: DSTORAGE_SOURCE_FILE {
-                Source: file.as_raw() as *mut _,
+            File: ManuallyDrop::new(DSTORAGE_SOURCE_FILE {
+                Source: unsafe { readonly_copy(&file) },
                 Offset: 0,
                 Size: file_size,
-            },
+            }),
         },
         Destination: DSTORAGE_DESTINATION {
-            Buffer: DSTORAGE_DESTINATION_BUFFER {
-                Resource: buffer_resource.as_raw() as *mut _,
+            Buffer: ManuallyDrop::new(DSTORAGE_DESTINATION_BUFFER {
+                Resource: unsafe { readonly_copy(&buffer_resource) },
                 Offset: 0,
                 Size: file_size,
-            },
+            }),
         },
         UncompressedSize: file_size,
         CancellationTag: 0,
-        Name: null(),
+        Name: PCSTR::null(),
     };
 
     println!("Enqueue Request to Queue.");
 
-    unsafe {
-        queue.EnqueueRequest(&request);
-    }
+    unsafe { queue.EnqueueRequest(&request) }
 
     // Configure a fence to be signaled when the request is completed
     let fence: ID3D12Fence = unsafe {
@@ -190,23 +186,22 @@ fn main() {
             .SetEventOnCompletion(FENCE_VALUE, fence_event)
             .expect("Can't set on completion event");
 
-        queue.EnqueueSignal(fence.as_raw() as *mut _, FENCE_VALUE);
+        queue.EnqueueSignal(&fence, FENCE_VALUE);
         queue.Submit();
     }
 
     println!("Waiting for the DirectStorage request to complete.");
 
     unsafe {
-        WaitForSingleObject(fence_event, 5 * 1000)
-            .ok()
-            .expect("Can't wait for fence event");
+        let _success = WaitForSingleObject(fence_event, 5 * 1000);
 
         if fence_event != INVALID_HANDLE_VALUE {
-            CloseHandle(fence_event);
+            CloseHandle(fence_event).expect("Failed to close Event object");
         }
     };
 
-    let error_record = unsafe { queue.RetrieveErrorRecord() };
+    let mut error_record = Default::default();
+    unsafe { queue.RetrieveErrorRecord(&mut error_record) };
 
     if error_record.FailureCount > 0 {
         println!(
