@@ -1,0 +1,64 @@
+on:
+  push:
+  pull_request:
+
+env:
+  DIRECTSTORAGE_VERSION: 1.2.2
+
+jobs:
+  rust:
+    name: Lint Rust code
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download DirectStorage NuGet package
+        run: |
+          mkdir .tmp
+          curl -L https://www.nuget.org/api/v2/package/Microsoft.Direct3D.DirectStorage/$env:DIRECTSTORAGE_VERSION -o .tmp/microsoft.direct3d.directstorage.$env:DIRECTSTORAGE_VERSION.nupkg
+          unzip .tmp/microsoft.direct3d.directstorage.$env:DIRECTSTORAGE_VERSION.nupkg -d .tmp
+          $arch="${{ runner.arch }}".ToLower()
+          # Place DLLs in $PWD so that the binaries can run
+          cp .tmp/native/bin/$arch/*.dll .
+          # Make link libraries available to the linker (this could also be done by copying them to $PWD)
+          echo "RUSTFLAGS=-Lnative=.tmp/native/lib/$arch" >> $env:GITHUB_ENV
+
+      - name: Cargo fmt
+        run: cargo fmt --all -- --check
+      - name: Cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Cargo test
+        run: cargo test --workspace
+
+      - name: Install nightly Rust
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Generate lockfile with minimal dependency versions
+        run: cargo +nightly generate-lockfile -Zminimal-versions
+
+      - name: Cargo clippy with minimal-versions
+        run: cargo +stable clippy --workspace --all-targets -- -D warnings
+
+  generate-rust:
+    name: Generate Rust crate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clean
+        run: rm -rf .windows/winmd/* src/Microsoft.rs
+      - name: Download winmd
+        run: |
+          curl -L https://www.nuget.org/api/v2/package/Microsoft.Direct3D.DirectStorage/$DIRECTSTORAGE_VERSION -o microsoft.direct3d.directstorage.$DIRECTSTORAGE_VERSION.nupkg
+          unzip microsoft.direct3d.directstorage.$DIRECTSTORAGE_VERSION.nupkg native/winmd/Microsoft.Direct3D.DirectStorage.winmd
+          mv native/winmd/Microsoft.Direct3D.DirectStorage.winmd .windows/winmd/
+          rm native -rf
+          rm microsoft.direct3d.directstorage.$DIRECTSTORAGE_VERSION.nupkg
+      - name: Generate
+        run: cargo r -p api_gen
+      - name: Upload crate source
+        uses: actions/upload-artifact@v3
+        with:
+          name: crate-source
+          path: src/
+      - name: Diff generated Rust code
+        run: test -z "$(git status --porcelain)" || (echo "::error::Generated files are different, please regenerate with cargo run -p api_gen!"; git status; false)

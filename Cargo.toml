@@ -1,24 +1,37 @@
 [package]
 name = "direct-storage"
-version = "0.2.0"
+version = "0.2.0+1.2.2"
 authors = ["Tsukisoft GmbH <contact@tsukisoft.com>"]
 license = "Apache-2.0 OR MIT"
-readme = "README.md"
 edition = "2021"
 rust-version = "1.66"
 repository = "https://github.com/Tsukisoft/direct-storage-rs"
 description = "Rust bindings for DirectStorage"
+categories = ["external-ffi-bindings", "api-bindings", "graphics", "hardware-support", "os::windows-apis"]
 keywords = ["graphics"]
+include = ["src", "LICENSE.APACHE", "LICENSE.MIT", "/examples"]
+
+[features]
+# Enable `runtime_loaded` module that loads function pointers at runtime,
+# instead of linking them at compile-time
+loaded = ["dep:libloading", "dep:once_cell"]
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]
 default-target = "x86_64-pc-windows-msvc"
 targets = []
+all-features = true
 
 [dependencies]
-libloading = "0.7"
-once_cell = "1.17"
-windows = { version = "0.44", features = ["implement", "Win32_Foundation", "Win32_Graphics_Direct3D12", "Win32_System_LibraryLoader", "Win32_Storage_FileSystem"] }
+libloading = { version = "0.8", optional = true }
+once_cell = { version = "1.17", optional = true }
+windows = { version = "0.52", features = ["implement", "Win32_Foundation", "Win32_Graphics_Direct3D12", "Win32_Storage_FileSystem"] }
+windows-core = { version = "0.52", features = ["implement"] }
 
 [dev-dependencies]
-windows = { version = "0.44", features = ["Win32_Foundation", "Win32_Graphics_Direct3D12", "Win32_Graphics_Direct3D", "Win32_Graphics_Dxgi_Common", "Win32_System_WindowsProgramming", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_Com", "Win32_System_Threading"] }
+windows = { version = "0.52", features = ["Win32_Foundation", "Win32_Graphics_Direct3D12", "Win32_Graphics_Direct3D", "Win32_Graphics_Dxgi_Common", "Win32_System_WindowsProgramming", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_Com", "Win32_System_Threading"] }
+
+[workspace]
+members = [
+  "api_gen",
+]
