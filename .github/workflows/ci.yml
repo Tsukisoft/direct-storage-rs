@@ -50,6 +50,7 @@ jobs:
         run: |
           curl -L https://www.nuget.org/api/v2/package/Microsoft.Direct3D.DirectStorage/$DIRECTSTORAGE_VERSION -o microsoft.direct3d.directstorage.$DIRECTSTORAGE_VERSION.nupkg
           unzip microsoft.direct3d.directstorage.$DIRECTSTORAGE_VERSION.nupkg native/winmd/Microsoft.Direct3D.DirectStorage.winmd
+          mkdir -p .windows/winmd/
           mv native/winmd/Microsoft.Direct3D.DirectStorage.winmd .windows/winmd/
           rm native -rf
           rm microsoft.direct3d.directstorage.$DIRECTSTORAGE_VERSION.nupkg
