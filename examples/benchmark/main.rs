@@ -178,7 +178,7 @@ pub fn main() {
             let factory: IDStorageFactory =
                 DStorageGetFactory().expect("Can't get DirectStorage factory");
 
-            factory.SetDebugFlags(DSTORAGE_DEBUG_SHOW_ERRORS.0 | DSTORAGE_DEBUG_BREAK_ON_ERROR.0);
+            factory.SetDebugFlags(DSTORAGE_DEBUG_SHOW_ERRORS | DSTORAGE_DEBUG_BREAK_ON_ERROR);
 
             factory
         };
@@ -574,8 +574,7 @@ fn run_test(
             sleep(Duration::from_secs(5));
         }
 
-        let mut error_record = Default::default();
-        unsafe { queue.RetrieveErrorRecord(&mut error_record) };
+        let error_record = unsafe { queue.RetrieveErrorRecord() };
 
         if error_record.FirstFailure.HResult.is_err() {
             println!(

@@ -63,6 +63,18 @@ pub mod Direct3D {
             }
             DStorageSetConfiguration(configuration).ok()
         }
+        #[inline]
+        pub unsafe fn DStorageSetConfiguration1(
+            configuration: *const DSTORAGE_CONFIGURATION1,
+        ) -> ::windows_core::Result<()> {
+            #[link(name = "dstorage")]
+            extern "system" {
+                pub fn DStorageSetConfiguration1(
+                    configuration: *const DSTORAGE_CONFIGURATION1,
+                ) -> ::windows_core::HRESULT;
+            }
+            DStorageSetConfiguration1(configuration).ok()
+        }
         #[repr(transparent)]
         #[derive(
             ::core::cmp::PartialEq, ::core::cmp::Eq, ::core::fmt::Debug, ::core::clone::Clone,
@@ -351,10 +363,10 @@ pub mod Direct3D {
                 )
                 .from_abi(result__)
             }
-            pub unsafe fn SetDebugFlags(&self, flags: u32) {
+            pub unsafe fn SetDebugFlags(&self, flags: DSTORAGE_DEBUG) {
                 (::windows_core::Interface::vtable(self).SetDebugFlags)(
                     ::windows_core::Interface::as_raw(self),
-                    flags,
+                    flags.0 as _,
                 )
             }
             pub unsafe fn SetStagingBufferSize(&self, size: u32) -> ::windows_core::Result<()> {
@@ -500,17 +512,21 @@ pub mod Direct3D {
                     ::windows_core::Interface::as_raw(self),
                 )
             }
-            pub unsafe fn RetrieveErrorRecord(&self, record: *mut DSTORAGE_ERROR_RECORD) {
+            pub unsafe fn RetrieveErrorRecord(&self) -> DSTORAGE_ERROR_RECORD {
+                let mut result__ = ::std::mem::zeroed();
                 (::windows_core::Interface::vtable(self).RetrieveErrorRecord)(
                     ::windows_core::Interface::as_raw(self),
-                    record,
-                )
+                    &mut result__,
+                );
+                ::std::mem::transmute(result__)
             }
-            pub unsafe fn Query(&self, info: *mut DSTORAGE_QUEUE_INFO) {
+            pub unsafe fn Query(&self) -> DSTORAGE_QUEUE_INFO {
+                let mut result__ = ::std::mem::zeroed();
                 (::windows_core::Interface::vtable(self).Query)(
                     ::windows_core::Interface::as_raw(self),
-                    info,
-                )
+                    &mut result__,
+                );
+                ::std::mem::transmute(result__)
             }
         }
         ::windows_core::imp::interface_hierarchy!(IDStorageQueue, ::windows_core::IUnknown);
@@ -611,18 +627,22 @@ pub mod Direct3D {
                     ::windows_core::Interface::as_raw(self),
                 )
             }
-            pub unsafe fn RetrieveErrorRecord(&self, record: *mut DSTORAGE_ERROR_RECORD) {
+            pub unsafe fn RetrieveErrorRecord(&self) -> DSTORAGE_ERROR_RECORD {
+                let mut result__ = ::std::mem::zeroed();
                 (::windows_core::Interface::vtable(self)
                     .base__
                     .RetrieveErrorRecord)(
-                    ::windows_core::Interface::as_raw(self), record
-                )
+                    ::windows_core::Interface::as_raw(self), &mut result__
+                );
+                ::std::mem::transmute(result__)
             }
-            pub unsafe fn Query(&self, info: *mut DSTORAGE_QUEUE_INFO) {
+            pub unsafe fn Query(&self) -> DSTORAGE_QUEUE_INFO {
+                let mut result__ = ::std::mem::zeroed();
                 (::windows_core::Interface::vtable(self).base__.Query)(
                     ::windows_core::Interface::as_raw(self),
-                    info,
-                )
+                    &mut result__,
+                );
+                ::std::mem::transmute(result__)
             }
             pub unsafe fn EnqueueSetEvent<P0>(&self, handle: P0)
             where
@@ -719,19 +739,23 @@ pub mod Direct3D {
                     .base__
                     .GetErrorEvent)(::windows_core::Interface::as_raw(self))
             }
-            pub unsafe fn RetrieveErrorRecord(&self, record: *mut DSTORAGE_ERROR_RECORD) {
+            pub unsafe fn RetrieveErrorRecord(&self) -> DSTORAGE_ERROR_RECORD {
+                let mut result__ = ::std::mem::zeroed();
                 (::windows_core::Interface::vtable(self)
                     .base__
                     .base__
                     .RetrieveErrorRecord)(
-                    ::windows_core::Interface::as_raw(self), record
-                )
+                    ::windows_core::Interface::as_raw(self), &mut result__
+                );
+                ::std::mem::transmute(result__)
             }
-            pub unsafe fn Query(&self, info: *mut DSTORAGE_QUEUE_INFO) {
+            pub unsafe fn Query(&self) -> DSTORAGE_QUEUE_INFO {
+                let mut result__ = ::std::mem::zeroed();
                 (::windows_core::Interface::vtable(self).base__.base__.Query)(
                     ::windows_core::Interface::as_raw(self),
-                    info,
-                )
+                    &mut result__,
+                );
+                ::std::mem::transmute(result__)
             }
             pub unsafe fn EnqueueSetEvent<P0>(&self, handle: P0)
             where
@@ -848,10 +872,10 @@ pub mod Direct3D {
             DSTORAGE_CUSTOM_DECOMPRESSION_FLAGS = DSTORAGE_CUSTOM_DECOMPRESSION_FLAGS(1u32);
         pub const DSTORAGE_CUSTOM_DECOMPRESSION_FLAG_NONE: DSTORAGE_CUSTOM_DECOMPRESSION_FLAGS =
             DSTORAGE_CUSTOM_DECOMPRESSION_FLAGS(0u32);
-        pub const DSTORAGE_DEBUG_BREAK_ON_ERROR: DSTORAGE_DEBUG = DSTORAGE_DEBUG(2u32);
-        pub const DSTORAGE_DEBUG_NONE: DSTORAGE_DEBUG = DSTORAGE_DEBUG(0u32);
-        pub const DSTORAGE_DEBUG_RECORD_OBJECT_NAMES: DSTORAGE_DEBUG = DSTORAGE_DEBUG(4u32);
-        pub const DSTORAGE_DEBUG_SHOW_ERRORS: DSTORAGE_DEBUG = DSTORAGE_DEBUG(1u32);
+        pub const DSTORAGE_DEBUG_BREAK_ON_ERROR: DSTORAGE_DEBUG = DSTORAGE_DEBUG(2i32);
+        pub const DSTORAGE_DEBUG_NONE: DSTORAGE_DEBUG = DSTORAGE_DEBUG(0i32);
+        pub const DSTORAGE_DEBUG_RECORD_OBJECT_NAMES: DSTORAGE_DEBUG = DSTORAGE_DEBUG(4i32);
+        pub const DSTORAGE_DEBUG_SHOW_ERRORS: DSTORAGE_DEBUG = DSTORAGE_DEBUG(1i32);
         pub const DSTORAGE_DISABLE_BUILTIN_CPU_DECOMPRESSION: i32 = -1i32;
         pub const DSTORAGE_GET_REQUEST_FLAG_SELECT_ALL: DSTORAGE_GET_REQUEST_FLAGS =
             DSTORAGE_GET_REQUEST_FLAGS(3u32);
@@ -1169,7 +1193,7 @@ pub mod Direct3D {
         }
         #[repr(transparent)]
         #[derive(::core::cmp::PartialEq, ::core::cmp::Eq)]
-        pub struct DSTORAGE_DEBUG(pub u32);
+        pub struct DSTORAGE_DEBUG(pub i32);
         impl ::core::marker::Copy for DSTORAGE_DEBUG {}
         impl ::core::clone::Clone for DSTORAGE_DEBUG {
             fn clone(&self) -> Self {
