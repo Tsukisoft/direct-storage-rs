@@ -200,8 +200,7 @@ fn main() {
         }
     };
 
-    let mut error_record = Default::default();
-    unsafe { queue.RetrieveErrorRecord(&mut error_record) };
+    let error_record = unsafe { queue.RetrieveErrorRecord() };
 
     if error_record.FailureCount > 0 {
         println!(

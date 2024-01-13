@@ -15,10 +15,10 @@ use std::mem::{transmute_copy, ManuallyDrop};
 
 use windows_core::Interface;
 
-mod Microsoft;
+mod Microsoft_Direct3D_DirectStorage;
 #[cfg(feature = "loaded")]
 pub mod runtime_loaded;
-pub use Microsoft::Direct3D::DirectStorage::*;
+pub use Microsoft_Direct3D_DirectStorage::Direct3D::DirectStorage::*;
 
 /// Create a temporary "owned" copy inside a [`ManuallyDrop`] without increasing the refcount or
 /// moving away the source variable.
