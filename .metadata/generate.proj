@@ -19,10 +19,7 @@
         <ImportLibs Include="$(PkgMicrosoft_Direct3D_DirectStorage)\native\lib\x64\dstorage.lib" />
 
         <Partition Include="dstorage.cpp">
-            <TraverseFiles>
-                $(PkgMicrosoft_Direct3D_DirectStorage)\native\include\dstorage.h;
-                $(PkgMicrosoft_Direct3D_DirectStorage)\native\include\dstorageerr.h
-            </TraverseFiles>
+            <TraverseFiles>$(PkgMicrosoft_Direct3D_DirectStorage)\native\include\dstorage.h;$(PkgMicrosoft_Direct3D_DirectStorage)\native\include\dstorageerr.h</TraverseFiles>
             <Namespace>Microsoft.Direct3D.DirectStorage</Namespace>
         </Partition>
 
