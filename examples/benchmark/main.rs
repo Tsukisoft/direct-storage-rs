@@ -18,7 +18,10 @@ use std::{
 };
 
 use direct_storage::{
-    readonly_copy, DStorageCreateCompressionCodec, DStorageGetFactory, DStorageSetConfiguration,
+    readonly_copy,
+    runtime_loaded::{
+        DStorageCreateCompressionCodec, DStorageGetFactory, DStorageSetConfiguration,
+    },
     IDStorageCompressionCodec, IDStorageFactory, IDStorageFile, IDStorageQueue,
     DSTORAGE_COMMAND_TYPE_REQUEST, DSTORAGE_COMPRESSION_BEST_RATIO, DSTORAGE_COMPRESSION_FORMAT,
     DSTORAGE_COMPRESSION_FORMAT_GDEFLATE, DSTORAGE_COMPRESSION_FORMAT_NONE, DSTORAGE_CONFIGURATION,

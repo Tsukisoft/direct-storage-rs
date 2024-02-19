@@ -20,12 +20,14 @@ searching for the library [as documented](https://learn.microsoft.com/en-us/wind
  2. Extract the package file (`.nupkg` files are just `.zip` files).
  3. Copy the ".dll" files from the folder for you architecture
     (under `\native\bin`).
- 4. Place the `dstorage.dll` and `dstoragecore.dll` files into the working
-    directory of your project.
+ 4. Copy the ".lib" file form the folder for your architecture
+    (under `\native\lib`)
+ 5. Place the `dstorage.dll`, `dstoragecore.dll` and `dstorage.lib` files
+    into the working directory of your project.
 
 ## Version
 
-This crate currently targets DirectStorage version 1.1. How long we will
+This crate currently targets DirectStorage version 1.2.2. How long we will
 support older versions is not clear yet, but we may support older version
 with feature toggles if the need arises.
 

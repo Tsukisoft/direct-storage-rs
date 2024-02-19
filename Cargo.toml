@@ -1,6 +1,6 @@
 [package]
 name = "direct-storage"
-version = "0.2.0+1.2.2"
+version = "0.3.0"
 authors = ["Tsukisoft GmbH <contact@tsukisoft.com>"]
 license = "Apache-2.0 OR MIT"
 edition = "2021"
@@ -12,9 +12,9 @@ keywords = ["graphics"]
 include = ["src", "LICENSE.APACHE", "LICENSE.MIT", "/examples"]
 
 [features]
-# Enable `runtime_loaded` module that loads function pointers at runtime,
-# instead of linking them at compile-time
+# Enable `runtime_loaded` module that loads function pointers at runtime instead of linking them at compile-time
 loaded = ["dep:libloading", "dep:once_cell"]
+default = ["loaded"]
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]
@@ -24,7 +24,7 @@ all-features = true
 
 [dependencies]
 libloading = { version = "0.8", optional = true }
-once_cell = { version = "1.17", optional = true }
+once_cell = { version = "1.19", optional = true }
 windows = { version = "0.52", features = ["implement", "Win32_Foundation", "Win32_Graphics_Direct3D12", "Win32_Storage_FileSystem"] }
 windows-core = { version = "0.52", features = ["implement"] }
 
