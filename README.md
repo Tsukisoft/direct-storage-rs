@@ -20,7 +20,7 @@ searching for the library [as documented](https://learn.microsoft.com/en-us/wind
  2. Extract the package file (`.nupkg` files are just `.zip` files).
  3. Copy the ".dll" files from the folder for you architecture
     (under `\native\bin`).
- 4. Copy the ".lib" file form the folder for your architecture
+ 4. Copy the ".lib" file from the folder for your architecture
     (under `\native\lib`)
  5. Place the `dstorage.dll`, `dstoragecore.dll` and `dstorage.lib` files
     into the working directory of your project.
@@ -33,7 +33,7 @@ with feature toggles if the need arises.
 
 ## Examples
 
-We ported some examples of the [DirectStorage Repository](https://github.com/microsoft/DirectStorage)
+We ported some examples from the [DirectStorage Repository](https://github.com/microsoft/DirectStorage)
 to Rust.
 
 They can be found in the examples folder and are licensed under [MIT](examples/LICENSE.MIT).

@@ -1,5 +1,9 @@
 # Change Log
 
+## Unreleased
+
+- Targets windows-rs v0.54
+
 ## v0.3.0 (2024-02-19)
 
 - Targets DirectStorage v1.2.1

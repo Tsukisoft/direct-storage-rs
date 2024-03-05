@@ -10,6 +10,7 @@
 
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
+#![warn(unused_qualifications)]
 
 use std::mem::{transmute_copy, ManuallyDrop};
 
