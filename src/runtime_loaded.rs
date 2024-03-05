@@ -5,7 +5,7 @@ use std::ffi::c_void;
 
 use libloading::Library;
 use once_cell::sync::Lazy;
-use windows_core::{ComInterface, Result, GUID, HRESULT};
+use windows_core::{Interface, Result, Type, GUID, HRESULT};
 
 use crate::{DSTORAGE_COMPRESSION_FORMAT, DSTORAGE_CONFIGURATION};
 
@@ -24,7 +24,7 @@ struct Libraries {
 ///
 /// # Safety
 /// Loads a raw pointer from `dstorage.dll` and casts it to a function to call.
-pub unsafe fn DStorageCreateCompressionCodec<T: ComInterface>(
+pub unsafe fn DStorageCreateCompressionCodec<T: Interface>(
     format: DSTORAGE_COMPRESSION_FORMAT,
     numThreads: u32,
 ) -> Result<T> {
@@ -39,7 +39,7 @@ pub unsafe fn DStorageCreateCompressionCodec<T: ComInterface>(
         .expect("Can't load function`DStorageCreateCompressionCodec`");
 
     let mut result__ = ::std::ptr::null_mut();
-    f(format, numThreads, &T::IID, &mut result__).from_abi(result__)
+    f(format, numThreads, &T::IID, &mut result__).and_then(|| Type::from_abi(result__))
 }
 
 /// Runtime-loaded variant of [`crate::DStorageSetConfiguration()`] from `dstorage.dll`
@@ -61,7 +61,7 @@ pub unsafe fn DStorageSetConfiguration(configuration: &DSTORAGE_CONFIGURATION) -
 ///
 /// # Safety
 /// Loads a raw pointer from `dstorage.dll` and casts it to a function to call.
-pub unsafe fn DStorageGetFactory<T: ComInterface>() -> Result<T> {
+pub unsafe fn DStorageGetFactory<T: Interface>() -> Result<T> {
     let f = DIRECT_STORAGE_LIB
         .ds
         .get::<unsafe extern "system" fn(riid: *const GUID, ppv: *mut *mut c_void) -> HRESULT>(
@@ -70,5 +70,5 @@ pub unsafe fn DStorageGetFactory<T: ComInterface>() -> Result<T> {
         .expect("Can't load function`DStorageGetFactory`");
 
     let mut result__ = ::std::ptr::null_mut();
-    f(&T::IID, &mut result__).from_abi(result__)
+    f(&T::IID, &mut result__).and_then(|| Type::from_abi(result__))
 }
