@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Targets windows-rs v0.54
+- Targets windows-rs v0.56-0.57
 
 ## v0.3.0 (2024-02-19)
 
