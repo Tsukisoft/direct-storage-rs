@@ -1,6 +1,6 @@
 [package]
 name = "direct-storage"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Tsukisoft GmbH <contact@tsukisoft.com>"]
 license = "Apache-2.0 OR MIT"
 edition = "2021"
@@ -33,5 +33,5 @@ windows = { version = ">=0.56, <=0.57", features = ["Win32_Foundation", "Win32_G
 
 [workspace]
 members = [
-  "api_gen",
+    "api_gen",
 ]
