@@ -4,7 +4,7 @@ version = "0.4.1"
 authors = ["Tsukisoft GmbH <contact@tsukisoft.com>"]
 license = "Apache-2.0 OR MIT"
 edition = "2021"
-rust-version = "1.66"
+rust-version = "1.70"
 repository = "https://github.com/Tsukisoft/direct-storage-rs"
 description = "Rust bindings for DirectStorage"
 categories = ["external-ffi-bindings", "api-bindings", "graphics", "hardware-support", "os::windows-apis"]
@@ -13,7 +13,7 @@ include = ["src", "LICENSE.APACHE", "LICENSE.MIT", "/examples"]
 
 [features]
 # Enable `runtime_loaded` module that loads function pointers at runtime instead of linking them at compile-time
-loaded = ["dep:libloading", "dep:once_cell"]
+loaded = ["dep:libloading"]
 default = ["loaded"]
 
 [package.metadata.docs.rs]
@@ -24,7 +24,6 @@ all-features = true
 
 [dependencies]
 libloading = { version = "0.8", optional = true }
-once_cell = { version = "1.19", optional = true }
 windows = { version = ">=0.57, <=0.59", features = ["Win32_Foundation", "Win32_Graphics_Direct3D12", "Win32_Storage_FileSystem"], default-features = false }
 windows-core = ">=0.57, <=0.59"
 windows-targets = "0.53"

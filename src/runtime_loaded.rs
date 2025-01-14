@@ -1,19 +1,14 @@
 //! Functions in this module are loaded dynamically at runtime, instead of linked dynamically
 //! against `dstorage.lib` at compile-time.
 
-use std::ffi::c_void;
+use std::{ffi::c_void, sync::OnceLock};
 
 use libloading::Library;
-use once_cell::sync::Lazy;
 use windows_core::{Interface, Result, Type, GUID, HRESULT};
 
 use crate::{DSTORAGE_COMPRESSION_FORMAT, DSTORAGE_CONFIGURATION};
 
-static DIRECT_STORAGE_LIB: Lazy<Libraries> = Lazy::new(|| {
-    let ds = unsafe { Library::new("dstorage.dll").expect("Can't load `dstorage.dll`") };
-    let core = unsafe { Library::new("dstoragecore.dll").expect("Can't load `dstoragecore.dll`") };
-    Libraries { ds, _core: core }
-});
+static DIRECT_STORAGE_LIB: OnceLock<Libraries> = OnceLock::new();
 
 struct Libraries {
     ds: Library,
@@ -29,6 +24,7 @@ pub unsafe fn DStorageCreateCompressionCodec<T: Interface>(
     numThreads: u32,
 ) -> Result<T> {
     let f = DIRECT_STORAGE_LIB
+        .get_or_init(|| unsafe { load_libraries() })
         .ds
         .get::<unsafe extern "system" fn(
             format: DSTORAGE_COMPRESSION_FORMAT,
@@ -48,6 +44,7 @@ pub unsafe fn DStorageCreateCompressionCodec<T: Interface>(
 /// Loads a raw pointer from `dstorage.dll` and casts it to a function to call.
 pub unsafe fn DStorageSetConfiguration(configuration: &DSTORAGE_CONFIGURATION) -> Result<()> {
     let f = DIRECT_STORAGE_LIB
+        .get_or_init(|| unsafe { load_libraries() })
         .ds
         .get::<unsafe extern "system" fn(configuration: *const DSTORAGE_CONFIGURATION) -> HRESULT>(
             b"DStorageSetConfiguration\0",
@@ -63,6 +60,7 @@ pub unsafe fn DStorageSetConfiguration(configuration: &DSTORAGE_CONFIGURATION) -
 /// Loads a raw pointer from `dstorage.dll` and casts it to a function to call.
 pub unsafe fn DStorageGetFactory<T: Interface>() -> Result<T> {
     let f = DIRECT_STORAGE_LIB
+        .get_or_init(|| unsafe { load_libraries() })
         .ds
         .get::<unsafe extern "system" fn(riid: *const GUID, ppv: *mut *mut c_void) -> HRESULT>(
             b"DStorageGetFactory\0",
@@ -71,4 +69,10 @@ pub unsafe fn DStorageGetFactory<T: Interface>() -> Result<T> {
 
     let mut result__ = ::std::ptr::null_mut();
     f(&T::IID, &mut result__).and_then(|| Type::from_abi(result__))
+}
+
+unsafe fn load_libraries() -> Libraries {
+    let ds = Library::new("dstorage.dll").expect("Can't load `dstorage.dll`");
+    let core = Library::new("dstoragecore.dll").expect("Can't load `dstoragecore.dll`");
+    Libraries { ds, _core: core }
 }
