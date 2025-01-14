@@ -1,5 +1,17 @@
+--in default
 --in .windows/winmd/
---out src/Microsoft_Direct3D_DirectStorage.rs
+--out src/bindings.rs
 
 --filter
     Microsoft.Direct3D.DirectStorage
+
+--reference
+    windows,skip-root,BOOL
+    windows,skip-root,D3D12_BOX
+    windows,skip-root,D3D12_TILED_RESOURCE_COORDINATE
+    windows,skip-root,D3D12_TILE_REGION_SIZE
+    windows,skip-root,HANDLE
+    windows,skip-root,BY_HANDLE_FILE_INFORMATION
+    windows,skip-root,ID3D12Device
+    windows,skip-root,ID3D12Fence
+    windows,skip-root,ID3D12Resource
