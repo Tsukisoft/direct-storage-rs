@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.5.0 (2025-01-14)
+
+- Targets windows-rs v0.57-0.59
+- Increased MSV of Rust to 1.70
+- Removed once_cell dependency
+
 ## v0.4.1 (2024-07-17)
 
 - Targets windows-rs v0.56-0.58
