@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v0.5.1 (2025-01-15)
+
+- Allow using windows-targets 0.52 next to 0.53
+
 ## v0.5.0 (2025-01-14)
 
 - Targets windows-rs v0.57-0.59
