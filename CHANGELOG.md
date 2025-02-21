@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Targets [windows-rs `0.60`](https://github.com/microsoft/windows-rs/releases/tag/0.62.0)
+- Increased MSV of Rust to 1.74
+
 ## v0.5.1 (2025-01-15)
 
 - Allow using windows-targets 0.52 next to 0.53

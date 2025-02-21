@@ -217,8 +217,8 @@ pub fn main() {
     let mut cycles = header.to_owned();
 
     for staging_buffer_size_mib in staging_sizes_mib {
-        let mut bandwith_row = format!("\n{}\t", staging_buffer_size_mib);
-        let mut cycles_row = format!("\n{}\t", staging_buffer_size_mib);
+        let mut bandwith_row = format!("\n{staging_buffer_size_mib}\t");
+        let mut cycles_row = format!("\n{staging_buffer_size_mib}\t");
 
         let mut found_one = false;
 
@@ -247,8 +247,7 @@ pub fn main() {
     }
 
     let mut combined = format!(
-        "Bandwith in GB/s\n{}\n\nCycles\n{}\n\nCompression\nCase\tSize\tRatio\n",
-        &bandwith, &cycles
+        "Bandwith in GB/s\n{bandwith}\n\nCycles\n{cycles}\n\nCompression\nCase\tSize\tRatio\n",
     );
 
     ratio_line(&mut combined, "Uncompressed", &uncompressed_metadata);
@@ -260,8 +259,7 @@ pub fn main() {
 
 fn ratio_line(s: &mut String, name: &str, metadata: &Metadata) {
     s.push_str(&format!(
-        "{}\t{}\t\t{:.2}\n",
-        name,
+        "{name}\t{}\t\t{:.2}\n",
         metadata.compressed_size,
         metadata.compressed_size as f64 / metadata.uncompressed_size as f64
     ));
@@ -307,13 +305,10 @@ fn compressed(
     let mut compressed_file =
         std::fs::File::create(compressed_file_path).expect("Can't create compressed file");
 
-    let num_chunks = (uncompressed_size + chunk_size_bytes - 1) / chunk_size_bytes;
+    let num_chunks = uncompressed_size.div_ceil(chunk_size_bytes);
 
     println!(
-        "Compressing {:?} to {:?} in {} x {} MiB chunks",
-        &original_file_path,
-        &compressed_file_path,
-        num_chunks,
+        "Compressing {original_file_path:?} to {compressed_file_path:?} in {num_chunks} x {} MiB chunks",
         chunk_size_bytes / 1024 / 1024
     );
 
@@ -378,9 +373,7 @@ fn compressed(
     }
 
     println!(
-        "Compressed from {} to {} bytes ({:.2}%)",
-        uncompressed_size,
-        total_compressed_size,
+        "Compressed from {uncompressed_size} to {total_compressed_size} bytes ({:.2}%)",
         (total_compressed_size as f64 / uncompressed_size as f64) * 100.0
     );
 
@@ -419,7 +412,7 @@ fn run_test(
             .expect("Can't create DirectStorage file");
 
     // The staging buffer size must be set before any queues are created.
-    print!("Staging buffer: {} MiB", staging_buffer_size_mib);
+    print!("Staging buffer: {staging_buffer_size_mib} MiB");
     unsafe { factory.SetStagingBufferSize(staging_buffer_size_mib * 1024 * 1024) }
         .expect("Can't set staging buffer size");
 
@@ -589,7 +582,7 @@ fn run_test(
                 let file = unsafe { &request.Request.Source.File };
                 let offset = file.Offset;
                 let size = file.Size;
-                println!("Offset: {} Size: {}", offset, size);
+                println!("Offset: {offset} Size: {size}");
             }
             exit(-1);
         }
@@ -611,10 +604,7 @@ fn run_test(
     mean_bandwidth /= num_runs as f64;
     mean_cycle_time /= num_runs as u64;
 
-    println!(
-        "\t...... {:.2} GB/s, mean cycle time: {}",
-        mean_bandwidth, mean_cycle_time
-    );
+    println!("\t...... {mean_bandwidth:.2} GB/s, mean cycle time: {mean_cycle_time}");
 
     TestResult {
         bandwidth: mean_bandwidth,
