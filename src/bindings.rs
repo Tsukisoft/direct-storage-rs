@@ -265,6 +265,8 @@ pub mod Microsoft {
                 pub MultipleSubresources:
                     core::mem::ManuallyDrop<DSTORAGE_DESTINATION_MULTIPLE_SUBRESOURCES>,
                 pub Tiles: core::mem::ManuallyDrop<DSTORAGE_DESTINATION_TILES>,
+                pub MultipleSubresourcesRange:
+                    core::mem::ManuallyDrop<DSTORAGE_DESTINATION_MULTIPLE_SUBRESOURCES_RANGE>,
             }
             impl Clone for DSTORAGE_DESTINATION {
                 fn clone(&self) -> Self {
@@ -306,6 +308,15 @@ pub mod Microsoft {
             }
             #[repr(C)]
             #[derive(Clone, Debug, Default, PartialEq)]
+            pub struct DSTORAGE_DESTINATION_MULTIPLE_SUBRESOURCES_RANGE {
+                pub Resource: core::mem::ManuallyDrop<
+                    Option<windows::Win32::Graphics::Direct3D12::ID3D12Resource>,
+                >,
+                pub FirstSubresource: u32,
+                pub NumSubresources: u32,
+            }
+            #[repr(C)]
+            #[derive(Clone, Debug, Default, PartialEq)]
             pub struct DSTORAGE_DESTINATION_TEXTURE_REGION {
                 pub Resource: core::mem::ManuallyDrop<
                     Option<windows::Win32::Graphics::Direct3D12::ID3D12Resource>,
@@ -324,6 +335,15 @@ pub mod Microsoft {
                 pub TileRegionSize: windows::Win32::Graphics::Direct3D12::D3D12_TILE_REGION_SIZE,
             }
             pub const DSTORAGE_DISABLE_BUILTIN_CPU_DECOMPRESSION: i32 = -1i32;
+            #[repr(transparent)]
+            #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+            pub struct DSTORAGE_ENQUEUE_REQUEST_FLAGS(pub u32);
+            pub const DSTORAGE_ENQUEUE_REQUEST_FLAG_FENCE_WAIT_BEFORE_GPU_WORK:
+                DSTORAGE_ENQUEUE_REQUEST_FLAGS = DSTORAGE_ENQUEUE_REQUEST_FLAGS(1u32);
+            pub const DSTORAGE_ENQUEUE_REQUEST_FLAG_FENCE_WAIT_BEFORE_SOURCE_ACCESS:
+                DSTORAGE_ENQUEUE_REQUEST_FLAGS = DSTORAGE_ENQUEUE_REQUEST_FLAGS(2u32);
+            pub const DSTORAGE_ENQUEUE_REQUEST_FLAG_NONE: DSTORAGE_ENQUEUE_REQUEST_FLAGS =
+                DSTORAGE_ENQUEUE_REQUEST_FLAGS(0u32);
             #[repr(C)]
             pub struct DSTORAGE_ERROR_FIRST_FAILURE {
                 pub HResult: windows_core::HRESULT,
@@ -504,6 +524,8 @@ pub mod Microsoft {
                 DSTORAGE_REQUEST_DESTINATION_TYPE(0u64);
             pub const DSTORAGE_REQUEST_DESTINATION_MULTIPLE_SUBRESOURCES:
                 DSTORAGE_REQUEST_DESTINATION_TYPE = DSTORAGE_REQUEST_DESTINATION_TYPE(3u64);
+            pub const DSTORAGE_REQUEST_DESTINATION_MULTIPLE_SUBRESOURCES_RANGE:
+                DSTORAGE_REQUEST_DESTINATION_TYPE = DSTORAGE_REQUEST_DESTINATION_TYPE(5u64);
             pub const DSTORAGE_REQUEST_DESTINATION_TEXTURE_REGION:
                 DSTORAGE_REQUEST_DESTINATION_TYPE = DSTORAGE_REQUEST_DESTINATION_TYPE(2u64);
             pub const DSTORAGE_REQUEST_DESTINATION_TILES: DSTORAGE_REQUEST_DESTINATION_TYPE =
@@ -531,7 +553,7 @@ pub mod Microsoft {
             #[repr(transparent)]
             #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
             pub struct DSTORAGE_REQUEST_SOURCE_TYPE(pub u64);
-            pub const DSTORAGE_SDK_VERSION: u32 = 202u32;
+            pub const DSTORAGE_SDK_VERSION: u32 = 300u32;
             #[repr(C)]
             pub union DSTORAGE_SOURCE {
                 pub Memory: DSTORAGE_SOURCE_MEMORY,
@@ -1865,6 +1887,108 @@ pub mod Microsoft {
                 }
             }
             impl windows_core::RuntimeName for IDStorageQueue2 {}
+            windows_core::imp::define_interface!(
+                IDStorageQueue3,
+                IDStorageQueue3_Vtbl,
+                0xdeb54c52_eca8_46b3_82a7_031b72262653
+            );
+            impl core::ops::Deref for IDStorageQueue3 {
+                type Target = IDStorageQueue2;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            windows_core::imp::interface_hierarchy!(
+                IDStorageQueue3,
+                windows_core::IUnknown,
+                IDStorageQueue,
+                IDStorageQueue1,
+                IDStorageQueue2
+            );
+            impl IDStorageQueue3 {
+                pub unsafe fn EnqueueRequests<P2>(
+                    &self,
+                    requests: &[DSTORAGE_REQUEST],
+                    fence: P2,
+                    value: u64,
+                    flag: DSTORAGE_ENQUEUE_REQUEST_FLAGS,
+                ) where
+                    P2: windows_core::Param<windows::Win32::Graphics::Direct3D12::ID3D12Fence>,
+                {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).EnqueueRequests)(
+                            windows_core::Interface::as_raw(self),
+                            core::mem::transmute(requests.as_ptr()),
+                            requests.len().try_into().unwrap(),
+                            fence.param().abi(),
+                            value,
+                            flag,
+                        )
+                    }
+                }
+            }
+            #[repr(C)]
+            #[doc(hidden)]
+            pub struct IDStorageQueue3_Vtbl {
+                pub base__: IDStorageQueue2_Vtbl,
+                pub EnqueueRequests: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *const DSTORAGE_REQUEST,
+                    u32,
+                    *mut core::ffi::c_void,
+                    u64,
+                    DSTORAGE_ENQUEUE_REQUEST_FLAGS,
+                ),
+            }
+            pub trait IDStorageQueue3_Impl: IDStorageQueue2_Impl {
+                fn EnqueueRequests(
+                    &self,
+                    requests: *const DSTORAGE_REQUEST,
+                    numrequests: u32,
+                    fence: windows_core::Ref<'_, windows::Win32::Graphics::Direct3D12::ID3D12Fence>,
+                    value: u64,
+                    flag: DSTORAGE_ENQUEUE_REQUEST_FLAGS,
+                );
+            }
+            impl IDStorageQueue3_Vtbl {
+                pub const fn new<Identity: IDStorageQueue3_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn EnqueueRequests<
+                        Identity: IDStorageQueue3_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        requests: *const DSTORAGE_REQUEST,
+                        numrequests: u32,
+                        fence: *mut core::ffi::c_void,
+                        value: u64,
+                        flag: DSTORAGE_ENQUEUE_REQUEST_FLAGS,
+                    ) {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDStorageQueue3_Impl::EnqueueRequests(
+                                this,
+                                core::mem::transmute_copy(&requests),
+                                core::mem::transmute_copy(&numrequests),
+                                core::mem::transmute_copy(&fence),
+                                core::mem::transmute_copy(&value),
+                                core::mem::transmute_copy(&flag),
+                            )
+                        }
+                    }
+                    Self {
+                        base__: IDStorageQueue2_Vtbl::new::<Identity, OFFSET>(),
+                        EnqueueRequests: EnqueueRequests::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDStorageQueue3 as windows_core::Interface>::IID
+                        || iid == &<IDStorageQueue as windows_core::Interface>::IID
+                        || iid == &<IDStorageQueue1 as windows_core::Interface>::IID
+                        || iid == &<IDStorageQueue2 as windows_core::Interface>::IID
+                }
+            }
+            impl windows_core::RuntimeName for IDStorageQueue3 {}
             windows_core::imp::define_interface!(
                 IDStorageStatusArray,
                 IDStorageStatusArray_Vtbl,
