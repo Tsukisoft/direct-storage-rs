@@ -10,7 +10,7 @@ jobs:
     name: Lint Rust code
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Download DirectStorage NuGet package
         run: |
@@ -49,7 +49,7 @@ jobs:
     name: Generate winmd
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Clean
         run: Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .windows/winmd/
       - name: Configure environment
@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: generate-winmd
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Clean
         run: rm -rf .windows/winmd/ src/Microsoft_Direct3D_DirectStorage.rs
       - name: Download winmd
