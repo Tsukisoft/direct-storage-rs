@@ -28,7 +28,7 @@ all-features = true
 [dependencies]
 libloading = { version = "0.8", optional = true }
 windows = { version = "0.61", features = ["Win32_Foundation", "Win32_Graphics_Direct3D12", "Win32_Storage_FileSystem"], default-features = false }
-windows-core = "0.61"
+windows-core = "0.62"
 windows-link = "0.1"
 
 [dev-dependencies]
