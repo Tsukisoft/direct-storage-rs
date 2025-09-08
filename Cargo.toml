@@ -29,7 +29,7 @@ all-features = true
 libloading = { version = "0.8", optional = true }
 windows = { version = "0.61", features = ["Win32_Foundation", "Win32_Graphics_Direct3D12", "Win32_Storage_FileSystem"], default-features = false }
 windows-core = "0.61"
-windows-link = "0.1"
+windows-link = "0.2"
 
 [dev-dependencies]
 windows = { version = "0.61", features = ["Win32_Foundation", "Win32_Graphics_Direct3D12", "Win32_Graphics_Direct3D", "Win32_Graphics_Dxgi_Common", "Win32_System_WindowsProgramming", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_Com", "Win32_System_Threading"], default-features = false }
