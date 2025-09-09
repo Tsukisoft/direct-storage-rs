@@ -1,6 +1,6 @@
 [package]
 name = "direct-storage"
-version = "0.7.0"
+version = "0.7.1"
 authors = [
     "Tsukisoft GmbH <contact@tsukisoft.com>",
     "Marijn Suijten <marijn@traverseresearch.nl>",
