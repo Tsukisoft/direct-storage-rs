@@ -2,7 +2,7 @@
 
 [![Documentation](https://docs.rs/direct-storage/badge.svg)](https://docs.rs/direct-storage/)
 [![Crates.io](https://img.shields.io/crates/v/direct-storage.svg)](https://crates.io/crates/direct-storage)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.APACHE)
 
 This crates implements [windows-rs](https://github.com/microsoft/windows-rs)
 compatible bindings for the DirectStorage API.
@@ -27,7 +27,7 @@ searching for the library [as documented](https://learn.microsoft.com/en-us/wind
 
 ## Version
 
-This crate currently targets DirectStorage version 1.2.2. How long we will
+This crate currently targets DirectStorage version 1.3. How long we will
 support older versions is not clear yet, but we may support older version
 with feature toggles if the need arises.
 
