@@ -1,5 +1,7 @@
 # Change Log
 
+- Targets [windows-rs `0.61` - `0.62`](https://github.com/microsoft/windows-rs/releases/tag/69)
+
 ## v0.7.0 (2025-07-02)
 
 - Targets [windows-rs `0.61`](https://github.com/microsoft/windows-rs/releases/tag/63)
