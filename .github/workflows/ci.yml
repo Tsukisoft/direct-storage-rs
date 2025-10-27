@@ -75,7 +75,7 @@ jobs:
       - name: Clean
         run: rm -rf .windows/winmd/ src/Microsoft_Direct3D_DirectStorage.rs
       - name: Download winmd
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: metadata
           path: .windows/winmd
