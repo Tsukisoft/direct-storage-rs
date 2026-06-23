@@ -52,6 +52,13 @@ pub mod Microsoft {
                 windows_link::link!("dstorage" "system" fn DStorageSetConfiguration1(configuration : *const DSTORAGE_CONFIGURATION1) -> windows_core::HRESULT);
                 unsafe { DStorageSetConfiguration1(configuration).ok() }
             }
+            #[inline]
+            pub unsafe fn DStorageSetConfiguration2(
+                configuration: *const DSTORAGE_CONFIGURATION2,
+            ) -> windows_core::Result<()> {
+                windows_link::link!("dstorage" "system" fn DStorageSetConfiguration2(configuration : *const DSTORAGE_CONFIGURATION2) -> windows_core::HRESULT);
+                unsafe { DStorageSetConfiguration2(configuration).ok() }
+            }
             #[repr(transparent)]
             #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
             pub struct DSTORAGE_COMMAND_TYPE(pub i32);
@@ -81,6 +88,8 @@ pub mod Microsoft {
                 DSTORAGE_COMPRESSION_FORMAT(1u8);
             pub const DSTORAGE_COMPRESSION_FORMAT_NONE: DSTORAGE_COMPRESSION_FORMAT =
                 DSTORAGE_COMPRESSION_FORMAT(0u8);
+            pub const DSTORAGE_COMPRESSION_FORMAT_ZSTD: DSTORAGE_COMPRESSION_FORMAT =
+                DSTORAGE_COMPRESSION_FORMAT(2u8);
             #[repr(transparent)]
             #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
             pub struct DSTORAGE_COMPRESSION_SUPPORT(pub u32);
@@ -151,6 +160,19 @@ pub mod Microsoft {
                 pub DisableGpuDecompressionMetacommand: windows_core::BOOL,
                 pub DisableGpuDecompression: windows_core::BOOL,
                 pub ForceFileBuffering: windows_core::BOOL,
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy, Debug, Default, PartialEq)]
+            pub struct DSTORAGE_CONFIGURATION2 {
+                pub NumSubmitThreads: u32,
+                pub NumBuiltInCpuDecompressionThreads: i32,
+                pub ForceMappingLayer: windows_core::BOOL,
+                pub DisableBypassIO: windows_core::BOOL,
+                pub DisableTelemetry: windows_core::BOOL,
+                pub DisableGpuDecompressionMetacommand: windows_core::BOOL,
+                pub DisableGpuDecompression: windows_core::BOOL,
+                pub ForceFileBuffering: windows_core::BOOL,
+                pub CreatorID: windows_core::GUID,
             }
             pub const DSTORAGE_CUSTOM_COMPRESSION_0: DSTORAGE_COMPRESSION_FORMAT =
                 DSTORAGE_COMPRESSION_FORMAT(128u8);
@@ -427,6 +449,19 @@ pub mod Microsoft {
                     unsafe { core::mem::zeroed() }
                 }
             }
+            pub const DSTORAGE_GACL_SHUFFLE_TRANSFORM_BC1: DSTORAGE_GACL_SHUFFLE_TRANSFORM_TYPE =
+                DSTORAGE_GACL_SHUFFLE_TRANSFORM_TYPE(1u8);
+            pub const DSTORAGE_GACL_SHUFFLE_TRANSFORM_BC3: DSTORAGE_GACL_SHUFFLE_TRANSFORM_TYPE =
+                DSTORAGE_GACL_SHUFFLE_TRANSFORM_TYPE(2u8);
+            pub const DSTORAGE_GACL_SHUFFLE_TRANSFORM_BC4: DSTORAGE_GACL_SHUFFLE_TRANSFORM_TYPE =
+                DSTORAGE_GACL_SHUFFLE_TRANSFORM_TYPE(3u8);
+            pub const DSTORAGE_GACL_SHUFFLE_TRANSFORM_BC5: DSTORAGE_GACL_SHUFFLE_TRANSFORM_TYPE =
+                DSTORAGE_GACL_SHUFFLE_TRANSFORM_TYPE(4u8);
+            pub const DSTORAGE_GACL_SHUFFLE_TRANSFORM_NONE: DSTORAGE_GACL_SHUFFLE_TRANSFORM_TYPE =
+                DSTORAGE_GACL_SHUFFLE_TRANSFORM_TYPE(0u8);
+            #[repr(transparent)]
+            #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+            pub struct DSTORAGE_GACL_SHUFFLE_TRANSFORM_TYPE(pub u8);
             #[repr(transparent)]
             #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
             pub struct DSTORAGE_GET_REQUEST_FLAGS(pub u32);
@@ -538,8 +573,9 @@ pub mod Microsoft {
             #[derive(Clone, Copy, Debug, PartialEq)]
             pub struct DSTORAGE_REQUEST_OPTIONS {
                 pub _bitfield1: u8,
-                pub Reserved1: [u8; 7],
-                pub _bitfield2: u64,
+                pub _bitfield2: u8,
+                pub Reserved1: [u8; 6],
+                pub _bitfield3: u64,
             }
             impl Default for DSTORAGE_REQUEST_OPTIONS {
                 fn default() -> Self {
@@ -553,7 +589,7 @@ pub mod Microsoft {
             #[repr(transparent)]
             #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
             pub struct DSTORAGE_REQUEST_SOURCE_TYPE(pub u64);
-            pub const DSTORAGE_SDK_VERSION: u32 = 300u32;
+            pub const DSTORAGE_SDK_VERSION: u32 = 400u32;
             #[repr(C)]
             pub union DSTORAGE_SOURCE {
                 pub Memory: DSTORAGE_SOURCE_MEMORY,
@@ -634,6 +670,8 @@ pub mod Microsoft {
                 windows_core::HRESULT(0x89240017_u32 as _);
             pub const E_DSTORAGE_INVALID_FILE_OFFSET: windows_core::HRESULT =
                 windows_core::HRESULT(0x8924001A_u32 as _);
+            pub const E_DSTORAGE_INVALID_GACL_SHUFFLE_TRANSFORM_TYPE: windows_core::HRESULT =
+                windows_core::HRESULT(0x89240043_u32 as _);
             pub const E_DSTORAGE_INVALID_INTERMEDIATE_SIZE: windows_core::HRESULT =
                 windows_core::HRESULT(0x8924001C_u32 as _);
             pub const E_DSTORAGE_INVALID_MEMORY_QUEUE_PRIORITY: windows_core::HRESULT =
@@ -662,6 +700,8 @@ pub mod Microsoft {
                 windows_core::HRESULT(0x89240008_u32 as _);
             pub const E_DSTORAGE_RESERVED_FIELDS: windows_core::HRESULT =
                 windows_core::HRESULT(0x8924000C_u32 as _);
+            pub const E_DSTORAGE_SCRATCH_BUFFER_TOO_SMALL: windows_core::HRESULT =
+                windows_core::HRESULT(0x89240042_u32 as _);
             pub const E_DSTORAGE_STAGING_BUFFER_LOCKED: windows_core::HRESULT =
                 windows_core::HRESULT(0x8924001F_u32 as _);
             pub const E_DSTORAGE_STAGING_BUFFER_TOO_SMALL: windows_core::HRESULT =
